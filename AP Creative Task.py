@@ -97,38 +97,86 @@ class Shape():
             for index in range(len(triangle)):
                 point = triangle[index]
                 centerRotated = rotatePoint(point, quaternion[0], quaternion[1], quaternion[2], quaternion[3])
-                triangle[index] = [centerRotated[0] + centroid[0], centerRotated[1] + centroid[1], centerRotated[2] + centroid[1]]
-        self.draw()
+                triangle[index] = [centerRotated[0] + centroid[0], centerRotated[1] + centroid[1], centerRotated[2] + centroid[2]]
 
 
     def draw(self):
         self.image.clear()
         for idx in range(len(self.triangles)):
             triangle = self.triangles[idx]
-            color = self.colors[idx // 2]
+            color = self.colors[idx]
             app.triangles.append([triangle, color, self, averageZDepth(triangle)])
 
-mrCube = Shape([
-    [[-25, 25, 50], [25, 25, 50], [-25, -25, 50]], [[25, 25, 50], [-25, -25, 50], [25, -25, 50]],
-    [[-25, 25, 100], [25, 25, 100], [-25, -25, 100]], [[25, 25, 100], [-25, -25, 100], [25, -25, 100]],
-    [[25, 25, 50], [25, 25, 100], [25, -25, 100]], [[25, 25, 50], [25, -25, 50], [25, -25, 100]],
-    [[25, 25, 50], [25, 25, 100], [25, -25, 100]], [[25, 25, 50], [25, -25, 50], [25, -25, 100]],
-    [[-25, 25, 50], [-25, 25, 100], [25, 25, 50]], [[25, 25, 50], [25, 25, 100], [-25, 25, 100]],
-    [[-25, -25, 50], [-25, -25, 100], [25, -25, 50]], [[25, -25, 50], [25, -25, 100], [-25, -25, 100]]
-], ['blue', 'green', 'red', 'orange', 'yellow', 'cyan'])
+def trianglesFromRectangle(r):
+    return [
+        [r[0], r[1], r[2]],
+        [r[0], r[3], r[2]]
+    ]
+
+def addPoints(p1, p2):
+    return [
+        p1[0] + p2[0],
+        p1[1] + p2[1],
+        p1[2] + p2[2],
+    ]
+
+def cube(x, y, z, s):
+    points = [
+        [-1, -1, -1],
+        [1, -1, -1],
+        [1, 1, -1],
+        [-1, 1, -1],
+        [-1, -1, 1],
+        [1, -1, 1],
+        [1, 1, 1],
+        [-1, 1, 1],
+    ]
+
+    for p in points:
+        p[0] *= s/2
+        p[1] *= s/2
+        p[2] *= s/2
+
+    rectangles = [
+        [0, 1, 2, 3],
+        [4, 5, 6, 7],
+        [0, 3, 7, 4],
+        [1, 2, 6, 5],
+        [0, 1, 5, 4],
+        [2, 3, 7, 6],
+    ]
+
+    triangles = []
+    for r in rectangles:
+        triangles += trianglesFromRectangle(r)
+
+    p = [x,y,z]
+    for t in triangles:
+        t[0] = addPoints(points[t[0]], p)
+        t[1] = addPoints(points[t[1]], p)
+        t[2] = addPoints(points[t[2]], p)
+    
+    return triangles
+    
+
+mrCube = Shape(
+    cube(0, 0, 75, 50)
+, ['blue', 'blue', 'green', 'green', 'red', 'red', 'orange', 'orange', 'yellow', 'yellow', 'cyan', 'cyan'])
 
 app.objects.append(mrCube)
 
 def handleDrawing():
+    app.triangles = []
     for shape in app.objects:
         shape.draw()
-    sortedTriangles = sorted(app.triangles, key=lambda x: x[3])
+
+    sortedTriangles = sorted(app.triangles, key=lambda x: -x[3])
     for triangle in sortedTriangles:
         triangle[2].image.add(drawTriangle(triangle[0][0], triangle[0][1], triangle[0][2], triangle[1]))
 
 app.stepsPerSecond = 30
 def onStep():
     handleDrawing()
-    mrCube.rotate((1, 1, 0, 0))
+    mrCube.rotate((1, 1, 1, 0))
 
 cmu_graphics.run()
