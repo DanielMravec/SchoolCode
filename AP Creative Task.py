@@ -68,7 +68,6 @@ def rotatePoint(point, angleDegree, i, j, k):
 
     return (rotation[1], rotation[2], rotation[3])
     
-
 class Shape():
     def __init__(self, triangles, colors):
         self.image = Group()
