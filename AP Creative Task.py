@@ -2,6 +2,8 @@ from cmu_graphics import *
 
 import math
 
+print("dada is tha best")
+
 app.setMaxShapeCount(99999999999999999999999999999)
 
 app.fov = 120
