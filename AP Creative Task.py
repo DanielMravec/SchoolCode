@@ -157,10 +157,37 @@ def cube(x, y, z, s):
         t[2] = addPoints(points[t[2]], p)
     
     return triangles
-    
+
+def betterCube(x, y, z, s):
+    p1 = [x-(s/2), y+(s/2), z-(s/2)]
+    p2 = [x+(s/2), y+(s/2), z-(s/2)]
+    p3 = [x+(s/2), y-(s/2), z-(s/2)]
+    p4 = [x-(s/2), y-(s/2), z-(s/2)]
+    p5 = [x-(s/2), y+(s/2), z+(s/2)]
+    p6 = [x+(s/2), y+(s/2), z+(s/2)]
+    p7 = [x+(s/2), y-(s/2), z+(s/2)]
+    p8 = [x-(s/2), y-(s/2), z+(s/2)]
+
+    t1 = [p1.copy(), p2.copy(), p3.copy()]
+    t2 = [p1.copy(), p4.copy(), p3.copy()]
+    t3 = [p5.copy(), p6.copy(), p7.copy()]
+    t4 = [p5.copy(), p8.copy(), p7.copy()]
+
+    t5 = [p1.copy(), p2.copy(), p5.copy()]
+    t6 = [p5.copy(), p6.copy(), p2.copy()]
+    t7 = [p4.copy(), p3.copy(), p8.copy()]
+    t8 = [p3.copy(), p7.copy(), p8.copy()]
+
+    t9 = [p1.copy(), p4.copy(), p8.copy()]
+    t10 = [p1.copy(), p5.copy(), p8.copy()]
+    t11 = [p2.copy(), p3.copy(), p7.copy()]
+    t12 = [p2.copy(), p6.copy(), p7.copy()]
+
+    return [t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12]
+
 
 mrCube = Shape(
-    cube(0, 0, 75, 50)
+    betterCube(0, 0, 75, 50)
 , ['blue', 'blue', 'green', 'green', 'red', 'red', 'orange', 'orange', 'yellow', 'yellow', 'cyan', 'cyan'])
 
 app.objects.append(mrCube)
