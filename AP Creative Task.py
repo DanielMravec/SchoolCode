@@ -26,8 +26,12 @@ def drawTriangle(point1, point2, point3, col):
     if p1 != None and p2 != None and p3 != None:
         return Polygon(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], fill=col)
 
-def averageZDepth(triangle):
-    return (triangle[0][2] + triangle[1][2] + triangle[2][2]) / 3
+def averageDistance(triangle):
+    # uses a^2 + b^2 + c^2 = d^2 for 3d distance
+    a = (triangle[0][0] + triangle[1][0] + triangle[2][0]) / 3
+    b = (triangle[0][1] + triangle[1][1] + triangle[2][1]) / 3
+    c = (triangle[0][2] + triangle[1][2] + triangle[2][2]) / 3
+    return math.sqrt(a**2 + b**2 + c**2)
 
 def multiplyQuaternions(q: tuple, p: tuple):
     ### RULES OF QUATERNION MULTIPLICATION ###
@@ -104,60 +108,9 @@ class Shape():
         for idx in range(len(self.triangles)):
             triangle = self.triangles[idx]
             color = self.colors[idx]
-            app.triangles.append([triangle, color, self, averageZDepth(triangle)])
-
-def trianglesFromRectangle(r):
-    return [
-        [r[0], r[1], r[2]],
-        [r[0], r[3], r[2]]
-    ]
-
-def addPoints(p1, p2):
-    return [
-        p1[0] + p2[0],
-        p1[1] + p2[1],
-        p1[2] + p2[2],
-    ]
+            app.triangles.append([triangle, color, self, averageDistance(triangle)])
 
 def cube(x, y, z, s):
-    points = [
-        [-1, -1, -1],
-        [1, -1, -1],
-        [1, 1, -1],
-        [-1, 1, -1],
-        [-1, -1, 1],
-        [1, -1, 1],
-        [1, 1, 1],
-        [-1, 1, 1],
-    ]
-
-    for p in points:
-        p[0] *= s/2
-        p[1] *= s/2
-        p[2] *= s/2
-
-    rectangles = [
-        [0, 1, 2, 3],
-        [4, 5, 6, 7],
-        [0, 3, 7, 4],
-        [1, 2, 6, 5],
-        [0, 1, 5, 4],
-        [2, 3, 7, 6],
-    ]
-
-    triangles = []
-    for r in rectangles:
-        triangles += trianglesFromRectangle(r)
-
-    p = [x,y,z]
-    for t in triangles:
-        t[0] = addPoints(points[t[0]], p)
-        t[1] = addPoints(points[t[1]], p)
-        t[2] = addPoints(points[t[2]], p)
-    
-    return triangles
-
-def betterCube(x, y, z, s):
     p1 = [x-(s/2), y+(s/2), z-(s/2)]
     p2 = [x+(s/2), y+(s/2), z-(s/2)]
     p3 = [x+(s/2), y-(s/2), z-(s/2)]
@@ -186,7 +139,7 @@ def betterCube(x, y, z, s):
 
 
 mrCube = Shape(
-    betterCube(0, 0, 75, 50)
+    cube(0, 0, 75, 50)
 , ['blue', 'blue', 'green', 'green', 'red', 'red', 'orange', 'orange', 'yellow', 'yellow', 'cyan', 'cyan'])
 
 app.objects.append(mrCube)
