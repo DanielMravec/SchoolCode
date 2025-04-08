@@ -1,22 +1,20 @@
-from cmu_graphics import *
+import pygame, math, time
 
-import math
+fov = 120
+fov = math.radians(fov)
+c = 2 * math.tan(fov / 2)
 
-app.setMaxShapeCount(99999999999999999999999999999)
+objects = []
+triangles = []
 
-app.fov = 120
-app.fov = math.radians(app.fov)
-app.c = 2 * math.tan(app.fov / 2)
+display = (600, 600)
+screen = pygame.display.set_mode(display, pygame.DOUBLEBUF)
 
-app.objects = []
-app.triangles = []
 
-app.width = 600
-app.height = 600
-
+### Rendering Section ###
 def renderPoint(x, y, z):
-    screenX = (app.width / 2.0) * (1+((1/app.c) * (x/z)))
-    screenY = (app.height / 2.0) * (1-((app.width/(app.c*app.height)) * (y/z)))
+    screenX = (display[0] / 2.0) * (1+((1/c) * (x/z)))
+    screenY = (display[1] / 2.0) * (1-((display[0]/(c*display[1])) * (y/z)))
     return (screenX, screenY)
 
 def drawTriangle(point1, point2, point3, col):
@@ -24,8 +22,9 @@ def drawTriangle(point1, point2, point3, col):
     p2 = renderPoint(point2[0], point2[1], point2[2])
     p3 = renderPoint(point3[0], point3[1], point3[2])
     if p1 != None and p2 != None and p3 != None:
-        return Polygon(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], fill=col)
+        return [p1, p2, p3]
 
+### Drawing Section
 def averageDistance(triangle):
     # uses a^2 + b^2 + c^2 = d^2 for 3d distance
     a = (triangle[0][0] + triangle[1][0] + triangle[2][0]) / 3
@@ -33,6 +32,44 @@ def averageDistance(triangle):
     c = (triangle[0][2] + triangle[1][2] + triangle[2][2]) / 3
     return math.sqrt(a**2 + b**2 + c**2)
 
+def lineFunction(p1, p2): # returns in y=mx+b. if it is undefined then return the vertical line
+    if p2[0] - p1[0] != 0:
+        m = (p2[1] - p1[1]) / (p2[0] - p1[0])
+        b = p1[1] - (m * p1[0])
+        return (m, b)
+    return p1[0]
+
+def crossProductVect(origin, vectA, vectB):
+    return (vectA[0] - origin[0]) * (vectB[1] - origin[1]) - (vectA[1] - origin[1]) * (vectB[0] - origin[0])
+
+def insideTriangle(point, triangle):
+    p1, p2, p3 = triangle
+
+    c1 = crossProductVect(p1, p2, point)
+    c2 = crossProductVect(p2, p3, point)
+    c3 = crossProductVect(p3, p1, point)
+
+    return (c1 >= 0 and c2 >= 0 and c3 >= 0) or (c1 <= 0 and c2 <= 0 and c3 <= 0)
+
+def trianglePixels(triangle):
+    pixels = []
+
+    xSorted = sorted(triangle, key=lambda x: x[0])
+    ySorted = sorted(triangle, key=lambda x: x[1])
+
+    xMin = xSorted[0][0]
+    xMax = xSorted[2][0]
+    yMin = ySorted[0][1]
+    yMax = ySorted[2][1]
+
+    for x in range(math.floor(xMin), math.ceil(xMax + 1)):
+        for y in range(math.floor(yMin), math.ceil(yMax + 1)):
+            point = (x, y)
+            if insideTriangle(point, triangle):
+                pixels.append(point)
+    return pixels
+
+### Quaternion Section ###
 def multiplyQuaternions(q: tuple, p: tuple):
     ### RULES OF QUATERNION MULTIPLICATION ###
     # for quaternion multiplication a*b, left column is a and top row is b
@@ -71,10 +108,12 @@ def rotatePoint(point, angleDegree, i, j, k):
     rotation = multiplyQuaternions(rotationQuaternion, (0, point[0], point[1], point[2]))
 
     return (rotation[1], rotation[2], rotation[3])
-    
+
+
+### Final area ###
 class Shape():
     def __init__(self, triangles, colors):
-        self.image = Group()
+        self.image = []
         self.triangles = triangles
         self.colors = colors
         self.draw()
@@ -86,9 +125,9 @@ class Shape():
                 centroid[0] += point[0]
                 centroid[1] += point[1]
                 centroid[2] += point[2]
-        centroid[0] /= len(self.triangles * 3)
-        centroid[1] /= len(self.triangles * 3)
-        centroid[2] /= len(self.triangles * 3)
+        centroid[0] /= len(self.triangles) * 3
+        centroid[1] /= len(self.triangles) * 3
+        centroid[2] /= len(self.triangles) * 3
         rotatedTriangles = self.triangles
         for triangle in rotatedTriangles:
             for point in triangle:
@@ -104,11 +143,11 @@ class Shape():
 
 
     def draw(self):
-        self.image.clear()
+        global triangles
         for idx in range(len(self.triangles)):
             triangle = self.triangles[idx]
             color = self.colors[idx]
-            app.triangles.append([triangle, color, self, averageDistance(triangle)])
+            triangles.append([triangle, color, self, averageDistance(triangle)])
 
 def cube(x, y, z, s):
     p1 = [x-(s/2), y+(s/2), z-(s/2)]
@@ -139,23 +178,40 @@ def cube(x, y, z, s):
 
 
 mrCube = Shape(
-    cube(0, 0, 75, 50)
-, ['blue', 'blue', 'green', 'green', 'red', 'red', 'orange', 'orange', 'yellow', 'yellow', 'cyan', 'cyan'])
+    cube(0, 0, 100, 75)
+, [(0, 0, 255), (0, 0, 255), (0, 255, 0), (0, 255, 0), (255, 0, 0), (255, 0, 0), (255, 127, 0), (255, 127, 0), (255, 255, 0), (255, 255, 0), (0, 255, 255), (0, 255, 255)])
 
-app.objects.append(mrCube)
+objects.append(mrCube)
 
 def handleDrawing():
-    app.triangles = []
-    for shape in app.objects:
+    global triangles
+    global objects
+    triangles = []
+    for shape in objects:
         shape.draw()
 
-    sortedTriangles = sorted(app.triangles, key=lambda x: -x[3])
+    sortedTriangles = sorted(triangles, key=lambda x: -x[3])
     for triangle in sortedTriangles:
-        triangle[2].image.add(drawTriangle(triangle[0][0], triangle[0][1], triangle[0][2], triangle[1]))
+        for pixel in trianglePixels(triangle[0]):
+            screen.set_at((round(pixel[0] + (display[0] / 2)), round(pixel[1] + (display[1] / 2))), triangle[1])
 
-app.stepsPerSecond = 30
-def onStep():
-    handleDrawing()
-    mrCube.rotate((1, 1, 0, 0))
+def main():
+    pygame.init()
+    while True:
+        startTime = time.time()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        screen.fill((255, 255, 255))
+        handleDrawing()
+        mrCube.rotate((1, 1, 1, 1))
+        pygame.display.flip()
+        pygame.time.delay(10)
 
-cmu_graphics.run()
+        deltaTime = time.time() - startTime
+        fps = 1 / deltaTime if deltaTime > 0 else 0
+
+        print(str(round(fps)) + ' fps')
+
+main()
