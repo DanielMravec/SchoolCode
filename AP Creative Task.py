@@ -156,6 +156,6 @@ def handleDrawing():
 app.stepsPerSecond = 30
 def onStep():
     handleDrawing()
-    mrCube.rotate((1, 1, 1, 0))
+    mrCube.rotate((1, 1, 0, 0))
 
 cmu_graphics.run()
